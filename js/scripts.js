@@ -13,7 +13,7 @@ const filterBtn = document.querySelector("#filter-select");
 let oldInputValue;
 
 // Funções
-const saveTodo = (text) => {
+const saveTodo = (text, done = 0, save = 1) => {
     const todo = document.createElement("div");
     todo.classList.add("todo");
 
@@ -36,6 +36,15 @@ const saveTodo = (text) => {
     deleteBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>'
     todo.appendChild(deleteBtn);
 
+    // Utilizando dados da local storage
+    if (done) {
+        todo.classList.add("done");
+    }
+
+    if (save) {
+        saveToDoLocalStorage({ text, done});
+    }
+
     todoList.appendChild(todo);
 
     todoInput.value = "";
@@ -56,6 +65,8 @@ const updateTodo = (text) => {
 
         if (todoTitle.innerText === oldInputValue) {
             todoTitle.innerText = text;
+
+            updateToDoLocalStorage(oldInputValue, text);
         }
     });
 };
@@ -126,17 +137,20 @@ document.addEventListener("click", (e) => {
 
     if (targetElement.classList.contains("finish-todo")) {
         parentElement.classList.toggle("done");
+
+        updateToDoStatusLocalStorage(todoTitle);
     }
 
     if (targetElement.classList.contains("edit-todo")) {
         toggleForms();
-
         editInput.value = todoTitle; //Se houvesse uma consulta no banco de dados poderia ser utilizada aqui 
         oldInputValue = todoTitle;
     }
 
     if (targetElement.classList.contains("remove-todo")) {
         parentElement.remove();
+
+        removeTodosLocalStorage(todoTitle);
     }
 });
 
@@ -177,3 +191,59 @@ filterBtn.addEventListener("change", (e) => {
 
     filterTodos(filterValue);
 });
+
+// Local Storage
+const getToDosLocalStorage = () => {
+    const todos = JSON.parse(localStorage.getItem("todos")) || [];
+
+    return todos;
+};
+
+const saveLocalStorage = (item) => {
+    localStorage.setItem("todos", JSON.stringify(item)); 
+};
+
+const loadToDos = () => {
+    const todos = getToDosLocalStorage();
+
+    todos.forEach((todo) => {
+        saveTodo(todo.text, todo.done, 0);
+    });
+};
+
+const saveToDoLocalStorage = (todo) => {
+    // Pegar todos os ToDos da Local Storage
+    const todos = getToDosLocalStorage();
+
+    // Add o novo ToDo no array
+    todos.push(todo);
+
+    // Salvar tudo na Local Storage
+    saveLocalStorage(todos);
+};
+
+const removeTodosLocalStorage = (todoText) => { // Se o objeto tiver um ID poderia ser usado como parâmetro
+    const todos = getToDosLocalStorage();
+
+    const filteredToDos = todos.filter((todo) => todo.text !== todoText);
+
+    saveLocalStorage(filteredToDos);
+};
+
+const updateToDoStatusLocalStorage = (todoText) => {
+    const todos = getToDosLocalStorage();
+
+    todos.map((todo) => todo.text === todoText ? (todo.done = !todo.done) : null);
+
+    saveLocalStorage(todos);
+};
+
+const updateToDoLocalStorage = (todoOldText, todoNewText) => {
+    const todos = getToDosLocalStorage();
+
+    todos.map((todo) => todo.text === todoOldText ? (todo.text = todoNewText) : null);
+
+    saveLocalStorage(todos);
+};
+
+loadToDos();
